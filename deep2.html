@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traducteur · Glass · Vocal</title>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <style>
+    /* ----- VARIABLES ET MODE CLAIR/SOMBRE ----- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.3);
+      --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+      --text-primary: #1e1e2f;
+      --text-secondary: #2d3a4b;
+      --placeholder: #6b7a8f;
+      --icon-color: #2d3a4b;
+      --toggle-bg: #e0e5ec;
+      --scroll-thumb: #4a6fa5;
+      --scroll-track: rgba(255,255,255,0.3);
+      --card-bottom-border: rgba(255,255,255,0.5);
+      --voice-active: #4caf50;
+      --voice-inactive: rgba(255,255,255,0.4);
+      background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #a5d8ff 100%);
+      transition: background 0.3s, color 0.2s;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    body.dark {
+      --glass-bg: rgba(20, 30, 45, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.15);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+      --text-primary: #f0f4fa;
+      --text-secondary: #cbd5e1;
+      --placeholder: #9aa8b9;
+      --icon-color: #cbd5e1;
+      --toggle-bg: #1e2a3a;
+      --scroll-thumb: #7aa2f7;
+      --scroll-track: rgba(255,255,255,0.1);
+      --card-bottom-border: rgba(255,255,255,0.2);
+      --voice-active: #66bb6a;
+      --voice-inactive: rgba(255,255,255,0.2);
+      background: linear-gradient(135deg, #1a2639 0%, #2c3e50 100%);
+    }
+
+    /* ----- STYLES GLOBAUX ----- */
+    .container {
+      width: 1400px;
+      max-width: 100%;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: stretch;
+      position: relative;
+      padding: 1rem;
+    }
+
+    .card {
+      flex: 1 1 450px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 2.5rem;
+      box-shadow: var(--glass-shadow);
+      padding: 2rem 1.8rem;
+      color: var(--text-primary);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* en-tête avec sélecteurs */
+    .lang-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .lang-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.2);
+      padding: 0.25rem 1rem;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+    }
+
+    /* DROPDOWN glass */
+    .dropdown-container {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+    }
+    .dropdown-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.5rem;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 60px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: 0.2s;
+      color: var(--text-primary);
+    }
+    .dropdown-toggle:hover {
+      background: rgba(255,255,255,0.4);
+    }
+    .dropdown-toggle span {
+      flex: 1;
+      font-weight: 500;
+    }
+    .dropdown-toggle ion-icon {
+      font-size: 1.2rem;
+      color: var(--icon-color);
+      transition: transform 0.3s;
+    }
+    .dropdown-container.active .dropdown-toggle ion-icon:last-child {
+      transform: rotate(180deg);
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: 120%;
+      left: 0;
+      width: 100%;
+      max-height: 280px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      list-style: none;
+      padding: 0.5rem;
+      z-index: 20;
+      display: none;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .dropdown-container.active .dropdown-menu {
+      display: block;
+    }
+    .dropdown-menu li {
+      padding: 0.8rem 1.2rem;
+      border-radius: 40px;
+      margin-bottom: 2px;
+      cursor: pointer;
+      color: var(--text-primary);
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+    .dropdown-menu li:hover {
+      background: rgba(255,255,255,0.6);
+    }
+    .dropdown-menu li.active {
+      background: rgba(70, 130, 200, 0.5);
+      color: white;
+      font-weight: 600;
+    }
+
+    /* Zone de texte + boutons vocaux */
+    .text-area {
+      position: relative;
+      margin: 1rem 0 0.5rem;
+      flex: 1;
+    }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid var(--glass-border);
+      border-radius: 32px;
+      padding: 1.5rem 3.5rem 1.5rem 1.5rem; /* espace pour bouton mic */
+      font-size: 1.1rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+      resize: vertical;
+      outline: none;
+      backdrop-filter: blur(6px);
+      transition: border 0.15s, box-shadow 0.15s;
+    }
+    textarea:focus {
+      border-color: #4a9eff;
+      box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.3);
+    }
+    textarea::placeholder {
+      color: var(--placeholder);
+      font-weight: 300;
+    }
+    textarea:disabled {
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
+
+    .voice-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: var(--voice-inactive);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--icon-color);
+      font-size: 1.6rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .voice-btn:hover {
+      transform: scale(1.1);
+      background: rgba(255,255,255,0.5);
+    }
+    .voice-btn.listening {
+      background: var(--voice-active);
+      color: white;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      70% { box-shadow: 0 0 0 12px rgba(76, 175, 80, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+
+    .chars {
+      position: absolute;
+      bottom: 20px;
+      left: 25px;
+      font-size: 0.85rem;
+      background: rgba(0,0,0,0.2);
+      padding: 0.2rem 0.8rem;
+      border-radius: 40px;
+      color: var(--text-secondary);
+      backdrop-filter: blur(4px);
+    }
+
+    /* bas de carte (upload / download) */
+    .card-bottom {
+      margin-top: 1.5rem;
+      border-top: 1px solid var(--card-bottom-border);
+      padding-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .card-bottom p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+    .file-label, .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      background: rgba(255,255,255,0.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 60px;
+      padding: 0.8rem 2rem;
+      cursor: pointer;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+      transition: 0.2s;
+      color: var(--text-primary);
+      width: fit-content;
+    }
+    .file-label:hover, .download-btn:hover {
+      background: rgba(255,255,255,0.45);
+      transform: scale(1.02);
+    }
+    .download-btn {
+      background: rgba(74, 158, 255, 0.35);
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    /* Bouton swap central */
+    .swap-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .swap-position {
+      background: rgba(255,255,255,0.3);
+      backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.5);
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: 0.25s;
+      color: var(--icon-color);
+    }
+    .swap-position:hover {
+      transform: scale(1.15) rotate(180deg);
+      background: rgba(255,255,255,0.6);
+    }
+    .swap-position ion-icon {
+      font-size: 2rem;
+    }
+
+    /* Mode switch (dark/light) */
+    .mode-toggle {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 100;
+    }
+    .toggle-checkbox {
+      display: none;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.4);
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      transition: 0.2s;
+      overflow: hidden;
+    }
+    .toggle-label:hover {
+      transform: scale(1.1);
+    }
+    .toggle-label img {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      transition: 0.3s ease;
+      pointer-events: none;
+    }
+    .sun-icon {
+      left: 10px;
+      opacity: 1;
+    }
+    .moon-icon {
+      right: 10px;
+      opacity: 0.4;
+    }
+    .toggle-checkbox:checked + .toggle-label .sun-icon {
+      opacity: 0.4;
+    }
+    .toggle-checkbox:checked + .toggle-label .moon-icon {
+      opacity: 1;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--scroll-track);
+      border-radius: 20px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scroll-thumb);
+      border-radius: 20px;
+      border: 2px solid transparent;
+    }
+
+    @media (max-width: 850px) {
+      .container { flex-direction: column; }
+      .swap-wrapper { order: 2; }
+      .swap-position { margin: 10px 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Mode sombre/clair -->
+  <div class="mode-toggle">
+    <input type="checkbox" class="toggle-checkbox" id="darkmode">
+    <label for="darkmode" class="toggle-label">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fbbf24'%3E%3Cpath d='M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18.75a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25a.75.75 0 01.75-.75zM6.166 17.834a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM2.25 12a.75.75 0 01.75-.75H5.25a.75.75 0 010 1.5H3a.75.75 0 01-.75-.75zM5.106 6.166a.75.75 0 10-1.06 1.06l1.59 1.591a.75.75 0 001.061-1.06l-1.59-1.591z'/%3E%3C/svg%3E" class="sun-icon" alt="light">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2399aaff'%3E%3Cpath d='M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25 9.75 9.75 0 0012.75 21a9.753 9.753 0 009.002-5.998z'/%3E%3C/svg%3E" class="moon-icon" alt="dark">
+    </label>
+  </div>
+
+  <div class="container">
+    <!-- Carte saisie (avec micro) -->
+    <div class="card input-card">
+      <div class="lang-row">
+        <span class="lang-label">De :</span>
+        <div class="dropdown-container" id="input-language">
+          <div class="dropdown-toggle">
+            <ion-icon name="language-outline"></ion-icon>
+            <span class="selected" data-value="auto">Auto (détecter)</span>
+            <ion-icon name="chevron-down-outline"></ion-icon>
+          </div>
+          <ul class="dropdown-menu"></ul>
+        </div>
+      </div>
+
+      <div class="text-area">
+        <textarea id="input-text" placeholder="Saisissez votre texte ou utilisez le micro…" maxlength="5000"></textarea>
+        <div class="chars"><span id="input-chars">0</span> / 5000</div>
+        <div class="voice-btn" id="start-recognition" title="Reconnaissance vocale (temps réel)">
+          <ion-icon name="mic-outline"></ion-icon>
+        </div>
+      </div>
+
+      <div class="card-bottom">
+        <p>📄 Importer un document</p>
+        <label class="file-label">
+          <span id="upload-title">Choisir un fichier</span>
+          <ion-icon name="cloud-upload-outline"></ion-icon>
+          <input type="file" id="upload-document" hidden>
+        </label>
+      </div>
+    </div>
+
+    <!-- Bouton swap -->
+    <div class="swap-wrapper">
+      <div class="swap-position" id="swapBtn">
+        <ion-icon name="swap-horizontal-outline"></ion-icon>
+      </div>
+    </div>
+
+    <!-- Carte résultat (avec haut-parleur) -->
+    <div class="card output-card">
+      <div class="lang-row">
+        <span class="lang-label">Vers :</span>
+        <div class="dropdown-container" id="output-language">
+          <div class="dropdown-toggle">
+            <ion-icon name="language-outline"></ion-icon>
+            <span class="selected" data-value="en">Anglais</span>
+            <ion-icon name="chevron-down-outline"></ion-icon>
+          </div>
+          <ul class="dropdown-menu"></ul>
+        </div>
+      </div>
+
+      <div class="text-area">
+        <textarea id="output-text" placeholder="Traduction…" disabled></textarea>
+        <div class="voice-btn" id="speak-output" title="Écouter la traduction">
+          <ion-icon name="volume-high-outline"></ion-icon>
+        </div>
+      </div>
+
+      <div class="card-bottom">
+        <p>⬇️ Télécharger la traduction</p>
+        <button class="download-btn" id="download-btn">
+          <span>Télécharger</span>
+          <ion-icon name="cloud-download-outline"></ion-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // -------------------- LISTE DES LANGUES --------------------
+      const languages = [
+        { no: "0", name: "Auto", native: "Détection", code: "auto" },
+        { no: "1", name: "Afrikaans", native: "Afrikaans", code: "af" },
+        { no: "2", name: "Albanian", native: "Shqip", code: "sq" },
+        { no: "3", name: "Arabic", native: "عربي", code: "ar" },
+        { no: "4", name: "Armenian", native: "Հայերէն", code: "hy" },
+        { no: "5", name: "Azerbaijani", native: "آذربایجان دیلی", code: "az" },
+        { no: "6", name: "Basque", native: "Euskara", code: "eu" },
+        { no: "7", name: "Belarusian", native: "Беларуская", code: "be" },
+        { no: "8", name: "Bulgarian", native: "Български", code: "bg" },
+        { no: "9", name: "Catalan", native: "Català", code: "ca" },
+        { no: "10", name: "Chinese (Simplified)", native: "中文简体", code: "zh-CN" },
+        { no: "11", name: "Chinese (Traditional)", native: "中文繁體", code: "zh-TW" },
+        { no: "12", name: "Croatian", native: "Hrvatski", code: "hr" },
+        { no: "13", name: "Czech", native: "Čeština", code: "cs" },
+        { no: "14", name: "Danish", native: "Dansk", code: "da" },
+        { no: "15", name: "Dutch", native: "Nederlands", code: "nl" },
+        { no: "16", name: "English", native: "English", code: "en" },
+        { no: "17", name: "Estonian", native: "Eesti keel", code: "et" },
+        { no: "18", name: "Filipino", native: "Filipino", code: "tl" },
+        { no: "19", name: "Finnish", native: "Suomi", code: "fi" },
+        { no: "20", name: "French", native: "Français", code: "fr" },
+        { no: "21", name: "Galician", native: "Galego", code: "gl" },
+        { no: "22", name: "Georgian", native: "ქართული", code: "ka" },
+        { no: "23", name: "German", native: "Deutsch", code: "de" },
+        { no: "24", name: "Greek", native: "Ελληνικά", code: "el" },
+        { no: "25", name: "Haitian Creole", native: "Kreyòl ayisyen", code: "ht" },
+        { no: "26", name: "Hebrew", native: "עברית", code: "iw" },
+        { no: "27", name: "Hindi", native: "हिन्दी", code: "hi" },
+        { no: "28", name: "Hungarian", native: "Magyar", code: "hu" },
+        { no: "29", name: "Icelandic", native: "Íslenska", code: "is" },
+        { no: "30", name: "Indonesian", native: "Bahasa Indonesia", code: "id" },
+        { no: "31", name: "Irish", native: "Gaeilge", code: "ga" },
+        { no: "32", name: "Italian", native: "Italiano", code: "it" },
+        { no: "33", name: "Japanese", native: "日本語", code: "ja" },
+        { no: "34", name: "Korean", native: "한국어", code: "ko" },
+        { no: "35", name: "Latvian", native: "Latviešu", code: "lv" },
+        { no: "36", name: "Lithuanian", native: "Lietuvių kalba", code: "lt" },
+        { no: "37", name: "Macedonian", native: "Македонски", code: "mk" },
+        { no: "38", name: "Malay", native: "Malay", code: "ms" },
+        { no: "39", name: "Maltese", native: "Malti", code: "mt" },
+        { no: "40", name: "Norwegian", native: "Norsk", code: "no" },
+        { no: "41", name: "Persian", native: "فارسی", code: "fa" },
+        { no: "42", name: "Polish", native: "Polski", code: "pl" },
+        { no: "43", name: "Portuguese", native: "Português", code: "pt" },
+        { no: "44", name: "Romanian", native: "Română", code: "ro" },
+        { no: "45", name: "Russian", native: "Русский", code: "ru" },
+        { no: "46", name: "Serbian", native: "Српски", code: "sr" },
+        { no: "47", name: "Slovak", native: "Slovenčina", code: "sk" },
+        { no: "48", name: "Slovenian", native: "Slovensko", code: "sl" },
+        { no: "49", name: "Spanish", native: "Español", code: "es" },
+        { no: "50", name: "Swahili", native: "Kiswahili", code: "sw" },
+        { no: "51", name: "Swedish", native: "Svenska", code: "sv" },
+        { no: "52", name: "Thai", native: "ไทย", code: "th" },
+        { no: "53", name: "Turkish", native: "Türkçe", code: "tr" },
+        { no: "54", name: "Ukrainian", native: "Українська", code: "uk" },
+        { no: "55", name: "Urdu", native: "اردو", code: "ur" },
+        { no: "56", name: "Vietnamese", native: "Tiếng Việt", code: "vi" },
+        { no: "57", name: "Welsh", native: "Cymraeg", code: "cy" },
+        { no: "58", name: "Yiddish", native: "ייִדיש", code: "yi" }
+      ];
+
+      // -------------------- ÉLÉMENTS DOM --------------------
+      const inputDropdown = document.getElementById('input-language');
+      const outputDropdown = document.getElementById('output-language');
+      const swapBtn = document.getElementById('swapBtn');
+      const inputText = document.getElementById('input-text');
+      const outputText = document.getElementById('output-text');
+      const inputChars = document.getElementById('input-chars');
+      const uploadFile = document.getElementById('upload-document');
+      const uploadTitle = document.getElementById('upload-title');
+      const downloadBtn = document.getElementById('download-btn');
+      const darkModeCheck = document.getElementById('darkmode');
+
+      // Boutons vocaux
+      const micBtn = document.getElementById('start-recognition');
+      const speakerBtn = document.getElementById('speak-output');
+
+      // -------------------- DROPDOWNS --------------------
+      function populateDropdown(dropdown, options) {
+        const ul = dropdown.querySelector('ul');
+        ul.innerHTML = '';
+        options.forEach(opt => {
+          const li = document.createElement('li');
+          li.textContent = `${opt.name} (${opt.native})`;
+          li.dataset.value = opt.code;
+          li.classList.add('option');
+          ul.appendChild(li);
+        });
+      }
+      populateDropdown(inputDropdown, languages);
+      populateDropdown(outputDropdown, languages);
+
+      const inputSelected = inputDropdown.querySelector('.selected');
+      const outputSelected = outputDropdown.querySelector('.selected');
+      inputDropdown.querySelectorAll('.option').forEach(li => {
+        if (li.dataset.value === 'auto') {
+          li.classList.add('active');
+          inputSelected.innerHTML = li.textContent;
+          inputSelected.dataset.value = 'auto';
+        }
+      });
+      outputDropdown.querySelectorAll('.option').forEach(li => {
+        if (li.dataset.value === 'en') {
+          li.classList.add('active');
+          outputSelected.innerHTML = li.textContent;
+          outputSelected.dataset.value = 'en';
+        }
+      });
+
+      document.querySelectorAll('.dropdown-container').forEach(dd => {
+        dd.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dd.classList.toggle('active');
+        });
+
+        dd.querySelectorAll('.option').forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dd.querySelectorAll('.option').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            const selectedSpan = dd.querySelector('.selected');
+            selectedSpan.innerHTML = opt.innerHTML;
+            selectedSpan.dataset.value = opt.dataset.value;
+            dd.classList.remove('active');
+            translate();
+          });
+        });
+      });
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-container').forEach(dd => dd.classList.remove('active'));
+      });
+
+      // -------------------- TRADUCTION --------------------
+      function translate() {
+        const text = inputText.value.trim();
+        if (!text) {
+          outputText.value = '';
+          return;
+        }
+        const fromLang = inputSelected.dataset.value || 'auto';
+        const toLang = outputSelected.dataset.value || 'en';
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
+        fetch(url)
+          .then(res => res.json())
+          .then(data => {
+            let translated = '';
+            if (data && data[0]) {
+              data[0].forEach(segment => {
+                if (segment[0]) translated += segment[0];
+              });
+            }
+            outputText.value = translated;
+          })
+          .catch(err => {
+            console.warn('Erreur traduction', err);
+            outputText.value = '⚠️ Erreur de traduction';
+          });
+      }
+
+      inputText.addEventListener('input', () => {
+        let val = inputText.value;
+        if (val.length > 5000) {
+          inputText.value = val.slice(0, 5000);
+          val = inputText.value;
+        }
+        inputChars.textContent = val.length;
+        translate();
+      });
+
+      // Swap
+      swapBtn.addEventListener('click', () => {
+        const tempHTML = inputSelected.innerHTML;
+        const tempVal = inputSelected.dataset.value;
+        inputSelected.innerHTML = outputSelected.innerHTML;
+        inputSelected.dataset.value = outputSelected.dataset.value;
+        outputSelected.innerHTML = tempHTML;
+        outputSelected.dataset.value = tempVal;
+
+        const activeInp = inputDropdown.querySelector('.option.active');
+        const activeOut = outputDropdown.querySelector('.option.active');
+        if (activeInp && activeOut) {
+          const inpVal = activeInp.dataset.value;
+          const outVal = activeOut.dataset.value;
+          inputDropdown.querySelectorAll('.option').forEach(li => {
+            li.classList.toggle('active', li.dataset.value === outVal);
+          });
+          outputDropdown.querySelectorAll('.option').forEach(li => {
+            li.classList.toggle('active', li.dataset.value === inpVal);
+          });
+        }
+
+        const tempText = inputText.value;
+        inputText.value = outputText.value;
+        outputText.value = tempText;
+        inputChars.textContent = inputText.value.length;
+        translate();
+      });
+
+      // Upload
+      uploadFile.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const allowedTypes = [
+          'application/pdf',
+          'text/plain',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+        if (allowedTypes.includes(file.type)) {
+          uploadTitle.textContent = file.name;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            inputText.value = ev.target.result.slice(0, 5000);
+            inputChars.textContent = inputText.value.length;
+            translate();
+          };
+          reader.readAsText(file);
+        } else {
+          alert('Format non supporté. Utilisez .txt, .pdf ou .doc/.docx');
+        }
+        uploadFile.value = '';
+      });
+
+      // Download
+      downloadBtn.addEventListener('click', () => {
+        const content = outputText.value;
+        if (!content) return alert('Rien à télécharger');
+        const lang = outputSelected.dataset.value || 'translated';
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `traduction_${lang}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Dark mode
+      darkModeCheck.addEventListener('change', () => {
+        document.body.classList.toggle('dark', darkModeCheck.checked);
+      });
+
+      // -------------------- VOIX : RECONNAISSANCE (temps réel) --------------------
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;      // Pour transcription en continu
+        recognition.interimResults = true;  // Résultats intermédiaires
+        recognition.maxAlternatives = 1;
+
+        let finalTranscript = ''; // Pour accumuler le texte final
+
+        micBtn.addEventListener('click', () => {
+          if (micBtn.classList.contains('listening')) {
+            // Si déjà en écoute, on arrête
+            recognition.stop();
+            micBtn.classList.remove('listening');
+            return;
+          }
+
+          // Réinitialiser la transcription si on veut repartir de zéro ?
+          // On peut soit ajouter à la suite, soit remplacer. Ici on remplace pour plus de clarté.
+          finalTranscript = '';
+          // On peut aussi vider le champ si souhaité, mais on préfère garder l'existant ?
+          // Pour une nouvelle dictée, on efface l'ancien texte.
+          inputText.value = '';
+          inputChars.textContent = 0;
+
+          // Définir la langue en fonction du dropdown entrée
+          const langCode = inputSelected.dataset.value;
+          // Mapping simple pour la reconnaissance (ex: 'fr' -> 'fr-FR', 'en' -> 'en-US')
+          let voiceLang = 'fr-FR'; // défaut
+          if (langCode !== 'auto') {
+            if (langCode === 'fr') voiceLang = 'fr-FR';
+            else if (langCode === 'en') voiceLang = 'en-US';
+            else if (langCode === 'es') voiceLang = 'es-ES';
+            else if (langCode === 'de') voiceLang = 'de-DE';
+            else if (langCode === 'it') voiceLang = 'it-IT';
+            else if (langCode === 'pt') voiceLang = 'pt-PT';
+            else if (langCode === 'ru') voiceLang = 'ru-RU';
+            else if (langCode === 'zh-CN') voiceLang = 'zh-CN';
+            else if (langCode === 'ja') voiceLang = 'ja-JP';
+            else voiceLang = langCode + '-' + langCode.toUpperCase(); // tentative générique
+          }
+          recognition.lang = voiceLang;
+
+          micBtn.classList.add('listening');
+          recognition.start();
+
+          recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+              } else {
+                interimTranscript += transcript;
+              }
+            }
+            // Afficher la combinaison du final et de l'interim
+            inputText.value = finalTranscript + interimTranscript;
+            // Limiter à 5000
+            if (inputText.value.length > 5000) {
+              inputText.value = inputText.value.slice(0, 5000);
+              finalTranscript = inputText.value; // ajuster finalTranscript
+            }
+            inputChars.textContent = inputText.value.length;
+            // Ne pas lancer la traduction à chaque interim pour éviter les appels API excessifs
+            // On peut déclencher seulement quand il y a du final ou un délai, mais on va le faire sur chaque mise à jour (simple)
+            // Pour éviter trop de requêtes, on pourrait utiliser un debounce, mais on laisse comme ça.
+            translate();
+          };
+
+          recognition.onerror = (event) => {
+            console.warn('Erreur reconnaissance', event.error);
+            micBtn.classList.remove('listening');
+          };
+
+          recognition.onend = () => {
+            micBtn.classList.remove('listening');
+            // On peut éventuellement refaire une passe si on veut continuer, mais on s'arrête.
+          };
+        });
+      } else {
+        micBtn.style.opacity = 0.3;
+        micBtn.title = 'Reconnaissance vocale non supportée';
+        micBtn.addEventListener('click', () => alert('Votre navigateur ne supporte pas la reconnaissance vocale.'));
+      }
+
+      // -------------------- VOIX : SYNTHÈSE --------------------
+      speakerBtn.addEventListener('click', () => {
+        const text = outputText.value;
+        if (!text) return;
+        if (!window.speechSynthesis) {
+          alert('Synthèse vocale non supportée');
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        const outLang = outputSelected.dataset.value;
+        utterance.lang = outLang === 'auto' ? 'en-US' : outLang;
+        window.speechSynthesis.speak(utterance);
+      });
+
+      // Initialisation compteur
+      inputChars.textContent = inputText.value.length;
+    })();
+  </script>
+</body>
+</html>
